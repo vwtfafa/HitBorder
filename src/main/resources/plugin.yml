@@ -1,0 +1,4 @@
+name: Hit-Border
+version: '1.0'
+main: org.vwtfafa.hitBorder.HitBorder
+api-version: '1.21'
