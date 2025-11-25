@@ -1,55 +1,315 @@
+// Force the correct ASM version for Java 21
+buildscript {
+    repositories {
+        gradlePluginPortal()
+        mavenCentral()
+    }
+    
+    dependencies {
+        classpath 'com.github.johnrengelman:shadow:8.1.1'
+    }
+    
+    configurations.classpath {
+        resolutionStrategy {
+            force 'org.ow2.asm:asm:9.5'
+            force 'org.ow2.asm:asm-commons:9.5'
+            force 'org.ow2.asm:asm-tree:9.5'
+            force 'org.ow2.asm:asm-util:9.5'
+            force 'org.ow2.asm:asm-analysis:9.5'
+        }
+    }
+}
+
 plugins {
     id 'java'
-    id("xyz.jpenilla.run-paper") version "2.3.1"
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
+    id 'maven-publish'
 }
+
+// Configure ASM for Java 21 compatibility
+configurations.all {
+    resolutionStrategy {
+        // Force ASM version that supports Java 21
+        force 'org.ow2.asm:asm:9.5'
+        force 'org.ow2.asm:asm-commons:9.5'
+        force 'org.ow2.asm:asm-tree:9.5'
+        force 'org.ow2.asm:asm-util:9.5'
+        force 'org.ow2.asm:asm-analysis:9.5'
+        
+        // Force Shadow plugin to use the correct ASM version
+        eachDependency { details ->
+            if (details.requested.group == 'org.ow2.asm') {
+                details.useVersion '9.5'
+            }
+        }
+    }
+}
+
+// Ensure we're using Java 21 for compilation and testing
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+    
+    // Enable preview features if needed
+    withSourcesJar()
+    withJavadocJar()
+}
+
+// Configure Java compilation tasks
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.release = 21
+    options.compilerArgs += ['-parameters', '--enable-preview']
+    options.fork = true
+    options.forkOptions.jvmArgs += ['--enable-preview']
+}
+
+// Set the base name for all archives
+archivesBaseName = 'HitBorder'
+
+// Die shadowJar-Konfiguration weiter unten im File verwendet bereits einen sicheren Ausgabepfad (build/outlibs)
+// Deshalb wird die frühere, doppelte Konfiguration entfernt, um Konflikte (Versuche zum Schreiben nach build/libs)
+// zu vermeiden. Siehe den 'tasks.named("shadowJar", ShadowJar)' Block weiter unten.
+
+// Ensure the JAR task also uses the correct name
+tasks.named('jar') {
+    archiveBaseName = 'HitBorder'
+    archiveClassifier = ''
+    // No version in the plain jar to avoid confusion
+    archiveVersion = ''
+}
+
+// Update the build task to show the correct output path
+tasks.named('build') {
+    doLast {
+        println "\n=== Build Successful ==="
+        println "Output: ${shadowJar.archiveFile.get()}"
+        println "=".repeat(24)
+    }
+}
+
+// Apply Java plugin explicitly for better compatibility
+apply plugin: 'java-library'
 
 group = 'org.vwtfafa'
 version = '1.0'
+description = 'HitBorder Minecraft Plugin'
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+    
+    // Ensure compatibility with Java 21
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+    
+    // Compile options
+    compileJava {
+        options.encoding = 'UTF-8'
+        options.release = 21
+        options.compilerArgs += ['-parameters', '--enable-preview']
+    }
+    
+    // Test compile options
+    compileTestJava {
+        options.encoding = 'UTF-8'
+        options.release = 21
+        options.compilerArgs += ['-parameters', '--enable-preview']
+    }
+    
+    // Javadoc options
+    javadoc {
+        options.encoding = 'UTF-8'
+        options.charSet = 'UTF-8'
+        options.addStringOption('Xdoclint:none', '-quiet')
+        options.addStringOption('encoding', 'UTF-8')
+        options.addStringOption('charSet', 'UTF-8')
+        options.addStringOption('-release', '21')
+    }
+}
 
 repositories {
     mavenCentral()
-    maven {
-        name = "papermc-repo"
-        url = "https://repo.papermc.io/repository/maven-public/"
-    }
+    maven { url 'https://repo.papermc.io/repository/maven-public/' }
+    maven { url 'https://plugins.gradle.org/m2/' }
 }
 
 dependencies {
-    compileOnly("io.papermc.paper:paper-api:1.21.8-R0.1-SNAPSHOT")
+    // Paper API (using 1.21.10 as it's the latest stable)
+    compileOnly 'io.papermc.paper:paper-api:1.21.10-R0.1-SNAPSHOT'
+    
+    // Test dependencies
+    testImplementation platform('org.junit:junit-bom:5.10.0')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation 'org.mockito:mockito-core:5.5.0'
+    testImplementation 'org.mockito:mockito-junit-jupiter:5.5.0'
+    
+    // ASM for Java 21 support (explicitly including these for Shadow plugin)
+    implementation 'org.ow2.asm:asm:9.5'
+    implementation 'org.ow2.asm:asm-commons:9.5'
+    implementation 'org.ow2.asm:asm-tree:9.5'
+    
+    // Annotation processors
+    compileOnly 'org.jetbrains:annotations:24.0.1'
 }
 
-tasks {
-  runServer {
-    // Configure the Minecraft version for our task.
-    // This is the only required configuration besides applying the plugin.
-    // Your plugin's jar (or shadowJar if present) will be used automatically.
-    minecraftVersion("1.21")
-  }
-}
-
-def targetJavaVersion = 21
-java {
-    def javaVersion = JavaVersion.toVersion(targetJavaVersion)
-    sourceCompatibility = javaVersion
-    targetCompatibility = javaVersion
-    if (JavaVersion.current() < javaVersion) {
-        toolchain.languageVersion = JavaLanguageVersion.of(targetJavaVersion)
-    }
-}
-
+// Configure Java compilation tasks
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
+    options.release = 21
+    options.compilerArgs += ['-parameters', '--enable-preview']
+    options.fork = true
+    options.forkOptions.jvmArgs += [
+        '--enable-preview',
+        '--add-opens', 'java.base/java.lang=ALL-UNNAMED',
+        '--add-opens', 'java.base/java.util=ALL-UNNAMED'
+    ]
+}
 
-    if (targetJavaVersion >= 10 || JavaVersion.current().isJava10Compatible()) {
-        options.release.set(targetJavaVersion)
+// Configure Java execution tasks
+tasks.withType(JavaExec).configureEach {
+    jvmArgs += [
+        '--enable-preview',
+        '--add-opens', 'java.base/java.lang=ALL-UNNAMED',
+        '--add-opens', 'java.base/java.util=ALL-UNNAMED'
+    ]
+}
+
+// Configure test tasks
+tasks.withType(Test).configureEach {
+    useJUnitPlatform()
+    jvmArgs += [
+        '--enable-preview',
+        '--add-opens', 'java.base/java.lang=ALL-UNNAMED',
+        '--add-opens', 'java.base/java.util=ALL-UNNAMED'
+    ]
+    testLogging {
+        events 'passed', 'skipped', 'failed'
+        showStandardStreams = true
+        showExceptions = true
+        showStackTraces = true
+        showCauses = true
+        exceptionFormat = 'full'
     }
 }
 
-processResources {
-    def props = [version: version]
-    inputs.properties props
-    filteringCharset 'UTF-8'
-    filesMatching('plugin.yml') {
-        expand props
+// Process resources
+tasks.processResources {
+    def expandProps = [
+        'version': project.version,
+        'name': project.name,
+        'description': project.description
+    ]
+    
+    // Set character encoding
+    filteringCharset = 'UTF-8'
+    
+    // Apply property expansion to specific files
+    filesMatching(['**/plugin.yml', '**/*.properties']) {
+        expand expandProps
+    }
+    
+    // Exclude unwanted files
+    exclude '**/*.xlsx', '**/*.xls', '**/*.doc', '**/*.docx', '**/.*'
+}
+
+// Ensure the JAR task also uses the correct name
+tasks.named('jar') {
+    archiveBaseName = 'HitBorder'
+    archiveClassifier = ''
+    // No version in the plain jar to avoid confusion
+    archiveVersion = ''
+}
+
+// Configure shadowJar task
+tasks.named('shadowJar', com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar) {
+    archiveBaseName.set('HitBorder')
+    archiveClassifier.set('')
+    archiveVersion.set(project.version.toString())
+    archiveFileName = "${archiveBaseName.get()}-${archiveVersion.get()}.jar"
+    // Temporärer Ausgabepfad, um Probleme beim Löschen von build/libs zu umgehen
+    destinationDirectory.set(file("${buildDir}/outlibs"))
+
+    // Configure manifest with all necessary attributes
+    manifest {
+        attributes(
+            'Multi-Release': 'true',
+            'Main-Class': 'org.vwtfafa.hitBorder.HitBorder',
+            'Implementation-Title': project.name,
+            'Implementation-Version': project.version,
+            'Implementation-Vendor': 'vwtfafa',
+            'Specification-Version': project.version,
+            'Built-By': System.getProperty('user.name'),
+            'Built-JDK': System.getProperty('java.version'),
+            'Build-Timestamp': new Date().format("yyyy-MM-dd'T'HH:mm:ssZ"),
+            'Created-By': "Gradle ${gradle.gradleVersion}",
+            'Build-Jdk': System.getProperty('java.version'),
+            'Build-OS': "${System.getProperty('os.name')} ${System.getProperty('os.arch')} ${System.getProperty('os.version')}"
+        )
+    }
+    
+    // Configure shadowJar for Java 21
+    mergeServiceFiles()
+    
+    // Exclude signature files and other unnecessary files
+    exclude 'META-INF/*.SF', 'META-INF/*.DSA', 'META-INF/*.RSA', 'META-INF/*.MF', 'META-INF/*.txt'
+    exclude 'META-INF/maven/**', 'META-INF/versions/**', 'module-info.class', '*.txt'
+    exclude 'META-INF/AL2.0', 'META-INF/LGPL2.1', 'META-INF/LICENSE*', 'META-INF/NOTICE*'
+    exclude 'META-INF/services/javax.annotation.processing.Processor'
+    exclude 'META-INF/services/javax.tools.JavaCompiler', 'META-INF/services/javax.tools.Compiler'
+    exclude 'META-INF/services/com.sun.source.tree.ReduceCache*', 'META-INF/services/com.sun.source.util.Plugin'
+    
+    // Add build info to the JAR
+    from('.') {
+        include 'LICENSE*', 'NOTICE*', 'README*', 'CHANGELOG*', 'VERSION*'
+    }
+ }
+
+ tasks.build {
+     dependsOn tasks.shadowJar
+ }
+
+test {
+    useJUnitPlatform()
+    testLogging {
+        events 'passed', 'skipped', 'failed'
+        showStandardStreams = true
+    }
+}
+
+// Configure JavaCompile for all compilation tasks
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.release = 21
+    options.compilerArgs += ['-parameters', '--enable-preview']
+    options.incremental = true
+    
+    // Ensure Java 21 compatibility
+    options.fork = true
+    options.forkOptions.jvmArgs += [
+        '--enable-preview',
+        '--add-opens', 'java.base/java.lang=ALL-UNNAMED',
+        '--add-opens', 'java.base/java.util=ALL-UNNAMED'
+    ]
+}
+
+// Configure Javadoc
+tasks.withType(Javadoc) {
+    options.encoding = 'UTF-8'
+    options.addBooleanOption('html5', true)
+}
+
+// Clean task configuration
+tasks.clean {
+    delete 'build'
+}
+
+// Print build information after successful build
+tasks.build {
+    doLast {
+        println "\n=== Build Successful ==="
+        println "Output: ${project.buildDir}/libs/${shadowJar.archiveFileName.get()}"
+        println "========================\n"
     }
 }

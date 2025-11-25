@@ -1,4 +1,54 @@
-name: Hit-Border
-version: '1.0'
+name: HitBorder
+version: '${version}'
 main: org.vwtfafa.hitBorder.HitBorder
 api-version: '1.21'
+authors: [vwtfafa]
+website: https://github.com/vwtfafa/HitBorder
+description: A plugin that makes the world border grow when players take damage
+
+# Command registration
+commands:
+  hitborder:
+    description: Main command for HitBorder
+    aliases: [hb]
+    usage: |
+      /<command> help - Show help
+      /<command> status - Show border status
+      /<command> toggle - Toggle border growth
+      /<command> reload - Reload configuration
+      /<command> setborder <size> - Set border size
+
+# Permission nodes
+permissions:
+  hitborder.admin:
+    description: Allows access to all HitBorder admin commands
+    default: op
+    children:
+      hitborder.bypass: true
+      hitborder.notify: true
+  
+  hitborder.bypass:
+    description: Allows bypassing the border restrictions
+    default: false
+    
+  hitborder.notify:
+    description: Receive notifications about border changes
+    default: true
+
+# Plugin metrics and update checker
+metrics: 12345  # Replace with your bStats ID if you have one
+update-checker: true
+
+# Dependencies (if any)
+depend: []
+softdepend: []  # Keine Soft-Dependencies erforderlich
+
+# Plugin load order (NORMAL, STARTUP, POSTWORLD)
+load: POSTWORLD
+
+# Additional settings
+settings:
+  config-version: 1.0
+  allow-nether: true
+  allow-end: true
+  auto-update: true

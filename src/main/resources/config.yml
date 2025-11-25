@@ -1,0 +1,138 @@
+# HitBorder Configuration
+# This file contains all the configuration options for the HitBorder plugin.
+
+# Whether the plugin is enabled (true/false)
+enabled: true
+
+# World settings
+world: world  # The world where the border will be active
+
+# Spawn settings
+spawn:
+  # Size of the protected spawn area in blocks (radius)
+  protection-radius: 8  # 8 blocks (half-chunk) by default
+
+  # Center of the protected spawn area (x, y, z)
+  # These coordinates should be at the center of a chunk
+  x: 8  # Center of first chunk (0-15) is at ~7.5, rounded to 8
+  y: 100
+  z: 8
+
+# Border settings
+border:
+  # Initial border size in blocks (radius)
+  initial-size: 16.0  # Start with 1 chunk (16 blocks) radius
+  
+  # How much the border grows when a player takes damage (in blocks)
+  grow-amount: 0.25  # Smaller growth per hit for more control
+  
+  # Time in seconds for the border to grow to its new size (smoother transition)
+  grow-time: 3  # Faster growth for more dynamic gameplay
+  
+  # Minimum border size (radius)
+  min-size: 16.0  # Don't let it get smaller than 1 chunk
+  
+  # Maximum border size (radius)
+  max-size: 100.0  # Maximum size the border can grow to
+  
+  # Whether the border should shrink back over time
+  shrink-enabled: true
+  
+  # How much the border shrinks per minute (if shrink-enabled is true)
+  shrink-amount: 0.2  # Slightly faster shrinking to encourage action
+  
+  # Minimum time between damage-triggered border growths (in seconds)
+  growth-cooldown: 10  # Shorter cooldown for more dynamic gameplay
+
+# Game settings
+game:
+  # If true, players will die when the border reaches maximum size
+  hardcore: true  # Hardcore mode enabled by default (players die at max border size)
+  
+  # Damage types that should trigger border growth
+  damage-types:
+    - ENTITY_ATTACK
+    - PROJECTILE
+    - FALL
+    - FIRE
+    - LAVA
+    - DROWNING
+    - BLOCK_EXPLOSION
+    - ENTITY_EXPLOSION
+    - VOID
+    - LIGHTNING
+    - SUFFOCATION
+    - STARVATION
+    - POISON
+    - MAGIC
+    - WITHER
+    - FALLING_BLOCK
+    - THORNS
+    - DRAGON_BREATH
+    - CUSTOM
+    - FLY_INTO_WALL
+    - HOT_FLOOR
+    - CRAMMING
+  
+  # Whether OPs can trigger border growth (set to false to exclude OPs)
+  affect-ops: true
+  
+  # Whether to show action bar messages when border grows
+  show-actionbar-messages: true
+  
+  # Whether to show title messages when border grows
+  show-title-messages: true
+  
+  # Whether to play sound effects when border grows
+  play-sounds: true
+  
+  # Sound to play when border grows
+  growth-sound: ENTITY_ENDER_DRAGON_GROWL
+  
+  # Sound volume (0.0 - 1.0)
+  sound-volume: 1.0
+  
+  # Sound pitch (0.5 - 2.0)
+  sound-pitch: 1.0
+
+# Messages
+messages:
+  prefix: "&8[&cHitBorder&8] "
+  
+  # Command messages
+  no-permission: "&cYou don't have permission to use this command!"
+  invalid-number: "&cPlease enter a valid number!"
+  usage-setborder: "&cUsage: /%s setborder <size>"
+  reloaded: "&aConfiguration has been reloaded!"
+  toggle-enabled: "&aHitBorder has been enabled!"
+  toggle-disabled: "&cHitBorder has been disabled!"
+  world-not-found: "&cThe specified world was not found!"
+  
+  # Border messages
+  border-grow: "&eThe world border is growing to &6%size% blocks&e!"
+  border-max: "&cThe border has reached its maximum size of %size% blocks!"
+  border-set: "&aBorder size set to &e%size% blocks&a!"
+  border-set-broadcast: "&aThe world border has been set to &e%size% blocks&a by %player%"
+  border-too-small: "&cThe border size cannot be smaller than %s blocks!"
+  border-too-big: "&cThe border size cannot be larger than %s blocks!"
+
+# Update checker settings
+update-checker:
+  enabled: true
+  notify-ops: true
+  download-updates: false
+  check-interval: 1440  # In minutes (24 hours)
+
+# Debug settings (for development)
+debug:
+  enabled: false
+  log-damage-events: false
+  log-border-changes: true
+
+# Performance settings
+performance:
+  # How often to save the border size to disk (in minutes, 0 to disable)
+  save-interval: 5
+  
+  # Whether to use async tasks for border updates
+  use-async: true
