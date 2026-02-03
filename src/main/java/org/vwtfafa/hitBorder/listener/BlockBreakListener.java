@@ -60,10 +60,14 @@ public class BlockBreakListener implements Listener {
         Player player = event.getPlayer();
         Block block = event.getBlock();
         
-        // Allow breaking blocks in the spawn area
-        if (isInSpawnArea(block.getLocation())) {
-            event.setCancelled(false);
+        if (player.hasPermission("hitborder.spawn.bypass")) {
             return;
+        }
+
+        // Prevent breaking blocks in the spawn area
+        if (isInSpawnArea(block.getLocation())) {
+            event.setCancelled(true);
+            sendSpawnProtectionMessage(player);
         }
     }
 
@@ -76,9 +80,14 @@ public class BlockBreakListener implements Listener {
         Player player = event.getPlayer();
         Block block = event.getBlock();
         
-        // Allow placing blocks in the spawn area
+        if (player.hasPermission("hitborder.spawn.bypass")) {
+            return;
+        }
+
+        // Prevent placing blocks in the spawn area
         if (isInSpawnArea(block.getLocation())) {
-            event.setCancelled(false);
+            event.setCancelled(true);
+            sendSpawnProtectionMessage(player);
         }
     }
 
@@ -94,5 +103,12 @@ public class BlockBreakListener implements Listener {
 
     public void reload() {
         loadSpawnSettings();
+    }
+
+    private void sendSpawnProtectionMessage(Player player) {
+        String message = configManager.getMessage("spawn-protection");
+        if (message != null && !message.isEmpty()) {
+            player.sendMessage(configManager.getMessage("prefix") + message);
+        }
     }
 }
