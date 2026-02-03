@@ -51,14 +51,12 @@ public final class HitBorder extends JavaPlugin {
                 new UpdateChecker(this, repo).checkForUpdates();
             }
             
-            isEnabled = true;
             getLogger().info("HitBorder v" + getDescription().getVersion() + " has been enabled!");
             
         } catch (Exception e) {
             getLogger().severe("Failed to enable HitBorder: " + e.getMessage());
             getLogger().log(Level.SEVERE, "Stacktrace:", e);
             Bukkit.getPluginManager().disablePlugin(this);
-            isEnabled = false;
         }
     }
 
@@ -99,9 +97,6 @@ public final class HitBorder extends JavaPlugin {
         getLogger().info("HitBorder configuration reloaded!");
     }
     
-    public boolean isPluginEnabled() {
-        return isEnabled;
-    }
     
     public BlockBreakListener getBlockBreakListener() {
         return blockBreakListener;
