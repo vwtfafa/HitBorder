@@ -11,7 +11,6 @@ import org.jetbrains.annotations.NotNull;
 import org.vwtfafa.hitBorder.HitBorder;
 import org.vwtfafa.hitBorder.config.ConfigManager;
 
-import java.util.Arrays;
 
 public class HitBorderCommand implements CommandExecutor {
     private final HitBorder plugin;
@@ -56,9 +55,44 @@ public class HitBorderCommand implements CommandExecutor {
                     sendMessage(sender, "invalid-number");
                     return true;
                 }
+
+            case "set":
+                if (args.length < 2) {
+                    sendMessage(sender, "usage-set", label);
+                    return true;
+                }
+                try {
+                    double size = Double.parseDouble(args[1]);
+                    return handleSetBorder(sender, size);
+                } catch (NumberFormatException e) {
+                    sendMessage(sender, "invalid-number");
+                    return true;
+                }
+
+            case "grow":
+                if (args.length < 2) {
+                    sendMessage(sender, "usage-grow", label);
+                    return true;
+                }
+                try {
+                    double amount = Double.parseDouble(args[1]);
+                    return handleGrow(sender, amount);
+                } catch (NumberFormatException e) {
+                    sendMessage(sender, "invalid-number");
+                    return true;
+                }
                 
             case "status":
                 return handleStatus(sender);
+
+            case "hardcore":
+                return handleHardcore(sender, args);
+
+            case "setspawn":
+                return handleSetSpawn(sender);
+
+            case "version":
+                return handleVersion(sender);
                 
             default:
                 sendHelp(sender);
@@ -138,22 +172,89 @@ public class HitBorderCommand implements CommandExecutor {
         
         return true;
     }
+
+    private boolean handleGrow(CommandSender sender, double amount) {
+        World world = Bukkit.getWorld(configManager.getWorldName());
+        if (world == null) {
+            sendMessage(sender, "world-not-found");
+            return true;
+        }
+
+        double currentSize = world.getWorldBorder().getSize() / 2;
+        double newSize = currentSize + amount;
+
+        if (newSize < configManager.getMinBorderSize()) {
+            sendMessage(sender, "border-too-small", String.valueOf(configManager.getMinBorderSize()));
+            return true;
+        }
+
+        if (newSize > configManager.getMaxBorderSize()) {
+            sendMessage(sender, "border-too-big", String.valueOf(configManager.getMaxBorderSize()));
+            return true;
+        }
+
+        configManager.setBorderSize(world, newSize);
+        sendMessage(sender, "border-grew", String.format("%.1f", amount), String.format("%.1f", newSize));
+        return true;
+    }
+
+    private boolean handleHardcore(CommandSender sender, String[] args) {
+        boolean newState;
+        if (args.length < 2) {
+            newState = !configManager.isHardcoreMode();
+        } else {
+            String value = args[1].toLowerCase();
+            if ("on".equals(value) || "true".equals(value) || "enable".equals(value)) {
+                newState = true;
+            } else if ("off".equals(value) || "false".equals(value) || "disable".equals(value)) {
+                newState = false;
+            } else {
+                sendMessage(sender, "usage-hardcore", "hitborder");
+                return true;
+            }
+        }
+
+        configManager.setHardcoreMode(newState);
+        sendMessage(sender, newState ? "hardcore-enabled" : "hardcore-disabled");
+        return true;
+    }
+
+    private boolean handleSetSpawn(CommandSender sender) {
+        if (!(sender instanceof Player)) {
+            sendMessage(sender, "player-only");
+            return true;
+        }
+
+        Player player = (Player) sender;
+        configManager.setSpawnLocation(player.getLocation());
+        plugin.getBlockBreakListener().reload();
+        sendMessage(sender, "spawn-set");
+        return true;
+    }
+
+    private boolean handleVersion(CommandSender sender) {
+        sendMessage(sender, "version", plugin.getDescription().getVersion());
+        return true;
+    }
     
     private void sendHelp(CommandSender sender) {
-        String[] helpMessages = {
-            "&6=== &eHitBorder Commands &6===",
-            "&e/hitborder help &7- Show this help message",
-            "&e/hitborder status &7- Show current border status"
-        };
-        
+        java.util.List<String> helpMessages = new java.util.ArrayList<>();
+        helpMessages.add("&6=== &eHitBorder Commands &6===");
+        helpMessages.add("&e/hitborder help &7- Show this help message");
+        helpMessages.add("&e/hitborder status &7- Show current border status");
+        helpMessages.add("&e/hitborder version &7- Show plugin version");
+
         if (sender.hasPermission("hitborder.admin")) {
-            helpMessages = Arrays.copyOf(helpMessages, helpMessages.length + 4);
-            helpMessages[helpMessages.length - 4] = "&6=== &eAdmin Commands &6===";
-            helpMessages[helpMessages.length - 3] = "&e/hitborder reload &7- Reload configuration";
-            helpMessages[helpMessages.length - 2] = "&e/hitborder toggle &7- Toggle the border growth";
-            helpMessages[helpMessages.length - 1] = "&e/hitborder setborder <size> &7- Set border size";
+            helpMessages.add("&6=== &eAdmin Commands &6===");
+            helpMessages.add("&e/hitborder reload &7- Reload configuration");
+            helpMessages.add("&e/hitborder toggle &7- Toggle the border growth");
+            helpMessages.add("&e/hitborder setborder <size> &7- Set border size");
+            helpMessages.add("&e/hitborder set <size> &7- Set border size");
+            helpMessages.add("&e/hitborder grow <amount> &7- Grow or shrink border");
+            helpMessages.add("&e/hitborder hardcore [on|off] &7- Toggle hardcore mode");
+            helpMessages.add("&e/hitborder setspawn &7- Set spawn to your location");
         }
-        
+
         for (String message : helpMessages) {
             sender.sendMessage(ChatColor.translateAlternateColorCodes('&', message));
         }
@@ -177,4 +278,5 @@ public class HitBorderCommand implements CommandExecutor {
         
         sender.sendMessage(message);
     }
+
 }
