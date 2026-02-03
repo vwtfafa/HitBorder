@@ -6,6 +6,12 @@ on:
       - beta
       - release
       - relse
+  workflow_dispatch:
+    inputs:
+      channel:
+        description: "Release channel (beta, release, relse)"
+        required: true
+        default: "beta"
 
 jobs:
   build-release:
@@ -35,7 +41,12 @@ jobs:
 
       - name: Determine release tag
         run: |
-          REF_NAME="${GITHUB_REF_NAME}"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            REF_NAME="${{ inputs.channel }}"
+          else
+            REF_NAME="${GITHUB_REF_NAME}"
+          fi
+          echo "REF_NAME=$REF_NAME" >> "$GITHUB_ENV"
           if [ "$REF_NAME" = "beta" ]; then
             echo "RELEASE_TAG=v${VERSION}-beta" >> "$GITHUB_ENV"
             echo "PRERELEASE=true" >> "$GITHUB_ENV"
@@ -66,4 +77,5 @@ jobs:
           tag_name: ${{ env.RELEASE_TAG }}
           name: HitBorder ${{ env.RELEASE_TAG }}
           prerelease: ${{ env.PRERELEASE }}
+          target_commitish: ${{ github.sha }}
           files: ${{ env.ARTIFACT }}

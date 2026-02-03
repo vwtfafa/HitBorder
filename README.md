@@ -40,5 +40,6 @@ Wenn du möchtest, kann ich:
 Versionierung
 
 - Die Projektversion wird aus der Datei `VERSION` gelesen. Ändere dort die Versionsnummer und das Build/Release übernimmt sie automatisch.
+- Releases starten automatisch bei Tag-Pushes (`beta`, `release`, `relse`) oder manuell über GitHub Actions → „Release Build“ (Input `channel`).
 
 Lizenz: Siehe LICENSE (falls vorhanden im Repo).

@@ -18,7 +18,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.Locale;
 import java.util.stream.Collectors;
 
 public class PlayerDamageListener implements Listener {
@@ -204,16 +203,35 @@ public class PlayerDamageListener implements Listener {
         border.setSize(finalNewSize, growTime);
         lastGrowthByPlayer.put(player.getUniqueId(), System.currentTimeMillis());
 
-        // Notify players with permission
+        // Notify players with permission (chat only, with ping)
         String message = configManager.getMessage("border-grow");
         if (message != null && !message.isEmpty()) {
             final String finalMessage = ChatColor.translateAlternateColorCodes('&',
                             configManager.getMessage("prefix") + message)
                     .replace("%size%", String.format("%.1f", finalNewSize / 2));
 
+            String ping = configManager.getMessage("ping");
+            final String finalPing = (ping == null || ping.isEmpty()) ? "" : " " + ping;
+
             world.getPlayers().stream()
                     .filter(p -> p.hasPermission("hitborder.notify"))
-                    .forEach(p -> p.sendMessage(finalMessage));
+                    .forEach(p -> p.sendMessage(finalMessage + finalPing));
+        }
+
+        if (atMaxSize) {
+            String maxMessage = configManager.getMessage("border-max");
+            if (maxMessage != null && !maxMessage.isEmpty()) {
+                final String finalMaxMessage = ChatColor.translateAlternateColorCodes('&',
+                                configManager.getMessage("prefix") + maxMessage)
+                        .replace("%size%", String.format("%.1f", finalNewSize / 2));
+
+                String ping = configManager.getMessage("ping");
+                final String finalPing = (ping == null || ping.isEmpty()) ? "" : " " + ping;
+
+                world.getPlayers().stream()
+                        .filter(p -> p.hasPermission("hitborder.notify"))
+                        .forEach(p -> p.sendMessage(finalMaxMessage + finalPing));
+            }
         }
 
         if (atMaxSize) {
