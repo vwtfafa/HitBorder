@@ -41,11 +41,24 @@ public class UpdateChecker {
                 connection.setRequestMethod("GET");
                 connection.setRequestProperty("User-Agent", USER_AGENT);
                 connection.setRequestProperty("Accept", "application/vnd.github+json");
+                String token = plugin.getConfig().getString("update-checker.github-token", "").trim();
+                if (!token.isEmpty()) {
+                    connection.setRequestProperty("Authorization", "Bearer " + token);
+                }
                 connection.setConnectTimeout(5000);
                 connection.setReadTimeout(5000);
                 connection.setUseCaches(false);
 
                 int responseCode = connection.getResponseCode();
+                if (responseCode == HttpURLConnection.HTTP_FORBIDDEN) {
+                    String remaining = connection.getHeaderField("X-RateLimit-Remaining");
+                    String hint = remaining != null && "0".equals(remaining)
+                            ? "GitHub API rate limit reached"
+                            : "Access blocked or rate-limited";
+                    plugin.getLogger().warning("Update check failed: HTTP 403 (" + hint + ").");
+                    plugin.getLogger().warning("Set update-checker.github-token in config.yml to avoid rate limits.");
+                    return;
+                }
                 if (responseCode != HttpURLConnection.HTTP_OK) {
                     plugin.getLogger().warning("Update check failed: HTTP " + responseCode);
                     return;
