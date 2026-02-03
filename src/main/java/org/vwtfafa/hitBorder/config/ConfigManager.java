@@ -4,6 +4,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.World;
 import org.bukkit.WorldBorder;
+import org.bukkit.Location;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
@@ -31,6 +32,7 @@ public class ConfigManager {
     private volatile boolean enabled;
     private volatile String worldName;
     private volatile boolean affectOps;
+    private volatile Location spawnLocation;
 
     public ConfigManager(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -88,6 +90,9 @@ public class ConfigManager {
             boolean newHardcoreMode = config.getBoolean("game.hardcore", false);
             boolean newEnabled = config.getBoolean("enabled", true);
             boolean newAffectOps = config.getBoolean("game.affect-ops", true);
+            int spawnX = config.getInt("spawn.x", 8);
+            int spawnY = config.getInt("spawn.y", 100);
+            int spawnZ = config.getInt("spawn.z", 8);
 
             // Validate world name
             String newWorldName = config.getString("world", "world").trim();
@@ -107,6 +112,11 @@ public class ConfigManager {
                 hardcoreMode = newHardcoreMode;
                 enabled = newEnabled;
                 worldName = newWorldName;
+            }
+
+            World spawnWorld = Bukkit.getWorld(newWorldName);
+            if (spawnWorld != null) {
+                spawnLocation = new Location(spawnWorld, spawnX, spawnY, spawnZ);
             }
 
             // Initialize world border with the new settings
@@ -150,6 +160,7 @@ public class ConfigManager {
             enabled = true;
             worldName = "world";
             affectOps = true;
+            spawnLocation = null;
 
             // Update the config file with defaults
             FileConfiguration config = plugin.getConfig();
@@ -180,6 +191,7 @@ public class ConfigManager {
     private boolean initializeWorldBorder() {
         String currentWorldName;
         double currentMinSize, currentMaxSize, currentInitialSize;
+        Location currentSpawn;
         
         // Get a consistent snapshot of the current settings
         synchronized (this) {
@@ -191,6 +203,7 @@ public class ConfigManager {
             currentMinSize = minBorderSize;
             currentMaxSize = maxBorderSize;
             currentInitialSize = initialBorderSize;
+            currentSpawn = spawnLocation;
         }
 
         World world = Bukkit.getWorld(currentWorldName);
@@ -213,7 +226,12 @@ public class ConfigManager {
             double size = Math.max(currentMinSize, Math.min(currentMaxSize, currentInitialSize));
             
             // Set border properties atomically
-            border.setCenter(0, 0);
+            if (currentSpawn != null) {
+                border.setCenter(currentSpawn.getX(), currentSpawn.getZ());
+                world.setSpawnLocation(currentSpawn.getBlockX(), currentSpawn.getBlockY(), currentSpawn.getBlockZ());
+            } else {
+                border.setCenter(0, 0);
+            }
             border.setSize(size * 2, 0); // Convert radius to diameter for Minecraft
             border.setDamageAmount(0);
             border.setDamageBuffer(0);
@@ -274,6 +292,10 @@ public class ConfigManager {
         return borderGrowTime;
     }
 
+    public int getGrowthCooldown() {
+        return growthCooldown;
+    }
+
     public double getMinBorderSize() {
         return minBorderSize;
     }
@@ -286,12 +308,26 @@ public class ConfigManager {
         return hardcoreMode;
     }
 
+    public boolean isAffectOps() {
+        return affectOps;
+    }
+
     public boolean isEnabled() {
         return enabled;
     }
 
     public String getWorldName() {
         return worldName;
+    }
+
+    public Location getSpawnLocation(@NotNull World world) {
+        if (spawnLocation != null && spawnLocation.getWorld() != null && spawnLocation.getWorld().equals(world)) {
+            return spawnLocation.clone();
+        }
+        int spawnX = plugin.getConfig().getInt("spawn.x", 8);
+        int spawnY = plugin.getConfig().getInt("spawn.y", 100);
+        int spawnZ = plugin.getConfig().getInt("spawn.z", 8);
+        return new Location(world, spawnX, spawnY, spawnZ);
     }
     
     public String getMessage(String key) {
@@ -369,6 +405,48 @@ public class ConfigManager {
             plugin.getLogger().info(message);
             notifyAdmins("\u00A7a" + message);
         }
+    }
+
+    public synchronized void setHardcoreMode(boolean newHardcoreMode) {
+        if (hardcoreMode != newHardcoreMode) {
+            hardcoreMode = newHardcoreMode;
+            Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+                try {
+                    FileConfiguration config = plugin.getConfig();
+                    config.set("game.hardcore", newHardcoreMode);
+                    plugin.saveConfig();
+                } catch (Exception e) {
+                    plugin.getLogger().warning("Failed to save hardcore mode: " + e.getMessage());
+                }
+            });
+        }
+    }
+
+    public synchronized void setSpawnLocation(@NotNull Location location) {
+        Objects.requireNonNull(location, "Spawn location cannot be null");
+        World world = location.getWorld();
+        if (world == null) {
+            throw new IllegalArgumentException("Spawn location must have a world");
+        }
+
+        spawnLocation = location.clone();
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            try {
+                FileConfiguration config = plugin.getConfig();
+                config.set("spawn.x", location.getBlockX());
+                config.set("spawn.y", location.getBlockY());
+                config.set("spawn.z", location.getBlockZ());
+                plugin.saveConfig();
+            } catch (Exception e) {
+                plugin.getLogger().warning("Failed to save spawn location: " + e.getMessage());
+            }
+        });
+
+        WorldBorder border = world.getWorldBorder();
+        if (border != null) {
+            border.setCenter(location.getX(), location.getZ());
+        }
+        world.setSpawnLocation(location.getBlockX(), location.getBlockY(), location.getBlockZ());
     }
     
     /**
