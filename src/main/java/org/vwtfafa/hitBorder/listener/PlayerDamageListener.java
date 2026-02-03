@@ -15,12 +15,16 @@ import org.vwtfafa.hitBorder.config.ConfigManager;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
 
 public class PlayerDamageListener implements Listener {
     private final HitBorder plugin;
     private final ConfigManager configManager;
     private Set<EntityDamageEvent.DamageCause> allowedDamageCauses;
+    private final ConcurrentMap<UUID, Long> lastGrowthByPlayer = new ConcurrentHashMap<>();
 
     public PlayerDamageListener(HitBorder plugin) {
         this.plugin = plugin;
@@ -110,6 +114,34 @@ public class PlayerDamageListener implements Listener {
             return;
         }
 
+        // Skip if ops should not affect the border
+        if (!configManager.isAffectOps() && player.isOp()) {
+            if (plugin.getConfig().getBoolean("debug.log-damage-events", false)) {
+                plugin.getLogger().info(String.format(
+                        "Damage event for %s ignored - ops do not affect border growth",
+                        player.getName()
+                ));
+            }
+            return;
+        }
+
+        int growthCooldownSeconds = configManager.getGrowthCooldown();
+        if (growthCooldownSeconds > 0) {
+            long now = System.currentTimeMillis();
+            long lastGrowth = lastGrowthByPlayer.getOrDefault(player.getUniqueId(), 0L);
+            long elapsedMillis = now - lastGrowth;
+            if (elapsedMillis < growthCooldownSeconds * 1000L) {
+                if (plugin.getConfig().getBoolean("debug.log-damage-events", false)) {
+                    plugin.getLogger().info(String.format(
+                            "Damage event for %s ignored - cooldown active (%.2fs remaining)",
+                            player.getName(),
+                            (growthCooldownSeconds * 1000L - elapsedMillis) / 1000.0
+                    ));
+                }
+                return;
+            }
+        }
+
         WorldBorder border = world.getWorldBorder();
         double currentSize = border.getSize();
         double growAmount = configManager.getBorderGrowAmount() * 2; // Convert to diameter
@@ -169,17 +201,37 @@ public class PlayerDamageListener implements Listener {
         // Apply new border size with smooth transition
         int growTime = configManager.getBorderGrowTime();
         border.setSize(finalNewSize, growTime);
+        lastGrowthByPlayer.put(player.getUniqueId(), System.currentTimeMillis());
 
-        // Notify players with permission
+        // Notify players with permission (chat only, with ping)
         String message = configManager.getMessage("border-grow");
         if (message != null && !message.isEmpty()) {
             final String finalMessage = ChatColor.translateAlternateColorCodes('&',
                             configManager.getMessage("prefix") + message)
                     .replace("%size%", String.format("%.1f", finalNewSize / 2));
 
+            String ping = configManager.getMessage("ping");
+            final String finalPing = (ping == null || ping.isEmpty()) ? "" : " " + ping;
+
             world.getPlayers().stream()
                     .filter(p -> p.hasPermission("hitborder.notify"))
-                    .forEach(p -> p.sendMessage(finalMessage));
+                    .forEach(p -> p.sendMessage(finalMessage + finalPing));
+        }
+
+        if (atMaxSize) {
+            String maxMessage = configManager.getMessage("border-max");
+            if (maxMessage != null && !maxMessage.isEmpty()) {
+                final String finalMaxMessage = ChatColor.translateAlternateColorCodes('&',
+                                configManager.getMessage("prefix") + maxMessage)
+                        .replace("%size%", String.format("%.1f", finalNewSize / 2));
+
+                String ping = configManager.getMessage("ping");
+                final String finalPing = (ping == null || ping.isEmpty()) ? "" : " " + ping;
+
+                world.getPlayers().stream()
+                        .filter(p -> p.hasPermission("hitborder.notify"))
+                        .forEach(p -> p.sendMessage(finalMaxMessage + finalPing));
+            }
         }
 
         // Debug logging
