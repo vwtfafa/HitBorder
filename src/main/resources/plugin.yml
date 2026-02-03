@@ -26,6 +26,7 @@ permissions:
     children:
       hitborder.bypass: true
       hitborder.notify: true
+      hitborder.spawn.bypass: true
   
   hitborder.bypass:
     description: Allows bypassing the border restrictions
@@ -34,6 +35,10 @@ permissions:
   hitborder.notify:
     description: Receive notifications about border changes
     default: true
+
+  hitborder.spawn.bypass:
+    description: Allows bypassing spawn protection
+    default: op
 
 # Plugin metrics and update checker
 metrics: 12345  # Replace with your bStats ID if you have one
