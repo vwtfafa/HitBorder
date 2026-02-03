@@ -93,7 +93,8 @@ tasks.named('build') {
 apply plugin: 'java-library'
 
 group = 'org.vwtfafa'
-version = '1.0'
+def versionFile = file('VERSION')
+version = versionFile.exists() ? versionFile.text.trim() : '1.0'
 description = 'HitBorder Minecraft Plugin'
 java {
     toolchain {
@@ -136,8 +137,8 @@ repositories {
 }
 
 dependencies {
-    // Paper API (using 1.21.10 as it's the latest stable)
-    compileOnly 'io.papermc.paper:paper-api:1.21.10-R0.1-SNAPSHOT'
+    // Paper API (using 1.21.11 as it's the latest stable)
+    compileOnly 'io.papermc.paper:paper-api:1.21.11-R0.1-SNAPSHOT'
     
     // Test dependencies
     testImplementation platform('org.junit:junit-bom:5.10.0')

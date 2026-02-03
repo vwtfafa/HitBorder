@@ -3,7 +3,7 @@ HitBorder
 
 Kurze Beschreibung
 
-Ein simples Paper/Spigot-Plugin für Minecraft 1.21.10: Wenn ein Spieler Schaden nimmt, wächst die Weltgrenze (WorldBorder).
+Ein simples Paper/Spigot-Plugin für Minecraft 1.21.11: Wenn ein Spieler Schaden nimmt, wächst die Weltgrenze (WorldBorder).
 
 Schnellstart
 
@@ -13,7 +13,7 @@ Schnellstart
 
    Ergebnis: build/libs/Hit-Border-<version>.jar
 
-2. Kopiere die JAR in dein Paper-Server `plugins/`-Verzeichnis (Paper 1.21.10) und starte den Server mit einer kompatiblen Java-Version (siehe unten).
+2. Kopiere die JAR in dein Paper-Server `plugins/`-Verzeichnis (Paper 1.21.11) und starte den Server mit einer kompatiblen Java-Version (siehe unten).
 
 3. Testen: Betritt die Welt (`/world`), erzeuge Schaden (z.B. /damage oder durch Mobs), und beobachte, wie sich die WorldBorder vergrößert.
 
@@ -36,5 +36,9 @@ Wenn du möchtest, kann ich:
 - fehlende Nachrichten-Keys ergänzen und Standardtexte setzen
 - eine Release-Checklist / GitHub Actions für automatische Builds erstellen
 - Kompatibilität mit Java 17 (falls benötigt) herstellen
+
+Versionierung
+
+- Die Projektversion wird aus der Datei `VERSION` gelesen. Ändere dort die Versionsnummer und das Build/Release übernimmt sie automatisch.
 
 Lizenz: Siehe LICENSE (falls vorhanden im Repo).

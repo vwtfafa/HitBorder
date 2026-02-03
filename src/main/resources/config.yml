@@ -115,6 +115,7 @@ messages:
   border-set-broadcast: "&aThe world border has been set to &e%size% blocks&a by %player%"
   border-too-small: "&cThe border size cannot be smaller than %s blocks!"
   border-too-big: "&cThe border size cannot be larger than %s blocks!"
+  spawn-protection: "&cYou cannot build or break blocks in the protected spawn area!"
 
 # Update checker settings
 update-checker:

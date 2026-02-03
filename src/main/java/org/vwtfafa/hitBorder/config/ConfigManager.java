@@ -274,6 +274,10 @@ public class ConfigManager {
         return borderGrowTime;
     }
 
+    public int getGrowthCooldown() {
+        return growthCooldown;
+    }
+
     public double getMinBorderSize() {
         return minBorderSize;
     }
@@ -284,6 +288,10 @@ public class ConfigManager {
 
     public boolean isHardcoreMode() {
         return hardcoreMode;
+    }
+
+    public boolean isAffectOps() {
+        return affectOps;
     }
 
     public boolean isEnabled() {
