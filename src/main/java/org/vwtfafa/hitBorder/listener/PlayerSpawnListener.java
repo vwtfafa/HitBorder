@@ -34,6 +34,7 @@ public class PlayerSpawnListener implements Listener {
         }
 
         ensureInsideBorder(player, player.getLocation());
+        sendJoinBorderMessage(player, world);
     }
 
     @EventHandler(priority = EventPriority.HIGH)
@@ -77,5 +78,20 @@ public class PlayerSpawnListener implements Listener {
         Location chosen = border.isInside(baseSpawn) ? baseSpawn : border.getCenter();
         int safeY = world.getHighestBlockYAt(chosen.getBlockX(), chosen.getBlockZ()) + 1;
         return new Location(world, chosen.getBlockX() + 0.5, safeY, chosen.getBlockZ() + 0.5);
+    }
+
+    private void sendJoinBorderMessage(Player player, World world) {
+        if (!plugin.getConfig().getBoolean("game.join-message.enabled", false)) {
+            return;
+        }
+        String message = configManager.getMessage("join-border-size");
+        if (message == null || message.isEmpty()) {
+            return;
+        }
+        double size = world.getWorldBorder().getSize() / 2;
+        String formatted = org.bukkit.ChatColor.translateAlternateColorCodes('&',
+                configManager.getMessage("prefix") + message)
+                .replace("%size%", String.format("%.1f", size));
+        player.sendMessage(formatted);
     }
 }

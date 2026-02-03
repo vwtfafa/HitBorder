@@ -18,6 +18,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import org.bukkit.Sound;
 import java.util.stream.Collectors;
 
 public class PlayerDamageListener implements Listener {
@@ -144,9 +145,28 @@ public class PlayerDamageListener implements Listener {
 
         WorldBorder border = world.getWorldBorder();
         double currentSize = border.getSize();
-        double growAmount = configManager.getBorderGrowAmount() * 2; // Convert to diameter
-        double newSize = currentSize + growAmount;
         double maxSize = configManager.getMaxBorderSize() * 2; // Convert to diameter
+        boolean atMaxSize = currentSize >= maxSize - 0.1;
+        if (atMaxSize && configManager.isHardcoreMode()) {
+            player.setHealth(0);
+            String deathMessage = configManager.getMessage("hardcore-death");
+            if (deathMessage != null && !deathMessage.isEmpty()) {
+                deathMessage = ChatColor.translateAlternateColorCodes('&',
+                                configManager.getMessage("prefix") + deathMessage)
+                        .replace("%player%", player.getName())
+                        .replace("%size%", String.format("%.1f", maxSize / 2));
+
+                String finalDeathMessage = deathMessage;
+                world.getPlayers().stream()
+                        .filter(p -> p.hasPermission("hitborder.notify"))
+                        .forEach(p -> p.sendMessage(finalDeathMessage));
+            }
+            return;
+        }
+
+        int halfHearts = Math.max(1, (int) Math.floor(event.getFinalDamage()));
+        double growAmount = configManager.getBorderGrowAmount() * 2 * halfHearts; // Convert to diameter
+        double newSize = currentSize + growAmount;
 
         // Debug logging
         if (plugin.getConfig().getBoolean("debug.log-border-changes", false)) {
@@ -162,7 +182,7 @@ public class PlayerDamageListener implements Listener {
         }
 
         // Ensure border doesn't exceed maximum size
-        boolean atMaxSize = false;
+        atMaxSize = false;
         if (newSize >= maxSize) {
             newSize = maxSize;
             atMaxSize = true;
@@ -203,7 +223,7 @@ public class PlayerDamageListener implements Listener {
         border.setSize(finalNewSize, growTime);
         lastGrowthByPlayer.put(player.getUniqueId(), System.currentTimeMillis());
 
-        // Notify players with permission (chat only, with ping)
+        // Notify players with permission (chat + optional sound ping)
         String message = configManager.getMessage("border-grow");
         if (message != null && !message.isEmpty()) {
             final String finalMessage = ChatColor.translateAlternateColorCodes('&',
@@ -215,7 +235,10 @@ public class PlayerDamageListener implements Listener {
 
             world.getPlayers().stream()
                     .filter(p -> p.hasPermission("hitborder.notify"))
-                    .forEach(p -> p.sendMessage(finalMessage + finalPing));
+                    .forEach(p -> {
+                        p.sendMessage(finalMessage);
+                        playNotificationSound(p);
+                    });
         }
 
         if (atMaxSize) {
@@ -225,12 +248,12 @@ public class PlayerDamageListener implements Listener {
                                 configManager.getMessage("prefix") + maxMessage)
                         .replace("%size%", String.format("%.1f", finalNewSize / 2));
 
-                String ping = configManager.getMessage("ping");
-                final String finalPing = (ping == null || ping.isEmpty()) ? "" : " " + ping;
-
                 world.getPlayers().stream()
                         .filter(p -> p.hasPermission("hitborder.notify"))
-                        .forEach(p -> p.sendMessage(finalMaxMessage + finalPing));
+                        .forEach(p -> {
+                            p.sendMessage(finalMaxMessage);
+                            playNotificationSound(p);
+                        });
             }
         }
 
@@ -247,5 +270,20 @@ public class PlayerDamageListener implements Listener {
 
     public void reload() {
         loadDamageCauses();
+    }
+
+    private void playNotificationSound(Player player) {
+        if (!plugin.getConfig().getBoolean("game.notification-sound.enabled", true)) {
+            return;
+        }
+        String soundName = plugin.getConfig().getString("game.notification-sound.name", "BLOCK_NOTE_BLOCK_PLING");
+        float volume = (float) plugin.getConfig().getDouble("game.notification-sound.volume", 1.0);
+        float pitch = (float) plugin.getConfig().getDouble("game.notification-sound.pitch", 1.2);
+        try {
+            Sound sound = Sound.valueOf(soundName.toUpperCase(java.util.Locale.ROOT));
+            player.playSound(player.getLocation(), sound, volume, pitch);
+        } catch (IllegalArgumentException e) {
+            plugin.getLogger().warning("Invalid notification sound configured: " + soundName);
+        }
     }
 }

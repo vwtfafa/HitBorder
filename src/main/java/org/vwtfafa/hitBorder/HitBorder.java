@@ -3,6 +3,7 @@ package org.vwtfafa.hitBorder;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.vwtfafa.hitBorder.command.HitBorderCommand;
+import org.vwtfafa.hitBorder.command.HitBorderTabCompleter;
 import org.vwtfafa.hitBorder.config.ConfigManager;
 import org.vwtfafa.hitBorder.listener.BlockBreakListener;
 import org.vwtfafa.hitBorder.listener.PlayerDamageListener;
@@ -35,6 +36,8 @@ public final class HitBorder extends JavaPlugin {
             // Register commands
             Objects.requireNonNull(getCommand("hitborder"), "Failed to register commands. Check plugin.yml")
                 .setExecutor(new HitBorderCommand(this));
+            Objects.requireNonNull(getCommand("hitborder"), "Failed to register commands. Check plugin.yml")
+                .setTabCompleter(new HitBorderTabCompleter());
             
             // Register event listeners
             this.damageListener = new PlayerDamageListener(this);

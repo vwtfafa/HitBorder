@@ -55,6 +55,32 @@ public class HitBorderCommand implements CommandExecutor {
                     sendMessage(sender, "invalid-number");
                     return true;
                 }
+
+            case "set":
+                if (args.length < 2) {
+                    sendMessage(sender, "usage-set", label);
+                    return true;
+                }
+                try {
+                    double size = Double.parseDouble(args[1]);
+                    return handleSetBorder(sender, size);
+                } catch (NumberFormatException e) {
+                    sendMessage(sender, "invalid-number");
+                    return true;
+                }
+
+            case "grow":
+                if (args.length < 2) {
+                    sendMessage(sender, "usage-grow", label);
+                    return true;
+                }
+                try {
+                    double amount = Double.parseDouble(args[1]);
+                    return handleGrow(sender, amount);
+                } catch (NumberFormatException e) {
+                    sendMessage(sender, "invalid-number");
+                    return true;
+                }
                 
             case "status":
                 return handleStatus(sender);
@@ -147,6 +173,31 @@ public class HitBorderCommand implements CommandExecutor {
         return true;
     }
 
+    private boolean handleGrow(CommandSender sender, double amount) {
+        World world = Bukkit.getWorld(configManager.getWorldName());
+        if (world == null) {
+            sendMessage(sender, "world-not-found");
+            return true;
+        }
+
+        double currentSize = world.getWorldBorder().getSize() / 2;
+        double newSize = currentSize + amount;
+
+        if (newSize < configManager.getMinBorderSize()) {
+            sendMessage(sender, "border-too-small", String.valueOf(configManager.getMinBorderSize()));
+            return true;
+        }
+
+        if (newSize > configManager.getMaxBorderSize()) {
+            sendMessage(sender, "border-too-big", String.valueOf(configManager.getMaxBorderSize()));
+            return true;
+        }
+
+        configManager.setBorderSize(world, newSize);
+        sendMessage(sender, "border-grew", String.format("%.1f", amount), String.format("%.1f", newSize));
+        return true;
+    }
+
     private boolean handleHardcore(CommandSender sender, String[] args) {
         boolean newState;
         if (args.length < 2) {
@@ -198,6 +249,8 @@ public class HitBorderCommand implements CommandExecutor {
             helpMessages.add("&e/hitborder reload &7- Reload configuration");
             helpMessages.add("&e/hitborder toggle &7- Toggle the border growth");
             helpMessages.add("&e/hitborder setborder <size> &7- Set border size");
+            helpMessages.add("&e/hitborder set <size> &7- Set border size");
+            helpMessages.add("&e/hitborder grow <amount> &7- Grow or shrink border");
             helpMessages.add("&e/hitborder hardcore [on|off] &7- Toggle hardcore mode");
             helpMessages.add("&e/hitborder setspawn &7- Set spawn to your location");
         }

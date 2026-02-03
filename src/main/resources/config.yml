@@ -30,7 +30,7 @@ border:
   grow-time: 3  # Faster growth for more dynamic gameplay
   
   # Minimum border size (radius)
-  min-size: 16.0  # Don't let it get smaller than 1 chunk
+  min-size: 1.0  # Don't let it get smaller than 1 block
   
   # Maximum border size (radius)
   max-size: 100.0  # Maximum size the border can grow to
@@ -77,6 +77,17 @@ game:
   # Whether OPs can trigger border growth (set to false to exclude OPs)
   affect-ops: true
 
+  # Notification sound when the border grows (ping)
+  notification-sound:
+    enabled: true
+    name: BLOCK_NOTE_BLOCK_PLING
+    volume: 1.0
+    pitch: 1.2
+
+  # Optional join message showing current border size
+  join-message:
+    enabled: false
+
 # Messages
 messages:
   prefix: "&8[&cHitBorder&8] "
@@ -85,6 +96,8 @@ messages:
   no-permission: "&cYou don't have permission to use this command!"
   invalid-number: "&cPlease enter a valid number!"
   usage-setborder: "&cUsage: /%s setborder <size>"
+  usage-set: "&cUsage: /%s set <size>"
+  usage-grow: "&cUsage: /%s grow <amount>"
   usage-hardcore: "&cUsage: /%s hardcore [on|off]"
   reloaded: "&aConfiguration has been reloaded!"
   toggle-enabled: "&aHitBorder has been enabled!"
@@ -101,10 +114,11 @@ messages:
   border-max: "&cThe border has reached its maximum size of %size% blocks!"
   border-set: "&aBorder size set to &e%size% blocks&a!"
   border-set-broadcast: "&aThe world border has been set to &e%size% blocks&a by %player%"
+  border-grew: "&aBorder changed by &e%s1 blocks&a (now %s2)."
+  join-border-size: "&7Current border size: &e%size% blocks"
   border-too-small: "&cThe border size cannot be smaller than %s blocks!"
   border-too-big: "&cThe border size cannot be larger than %s blocks!"
   spawn-protection: "&cYou cannot build or break blocks in the protected spawn area!"
-  ping: "&a*ping*"
 
 # Update checker settings
 update-checker:

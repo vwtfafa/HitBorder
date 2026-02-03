@@ -17,6 +17,8 @@ commands:
       /<command> toggle - Toggle border growth
       /<command> reload - Reload configuration
       /<command> setborder <size> - Set border size
+      /<command> set <size> - Set border size
+      /<command> grow <amount> - Grow or shrink border
       /<command> hardcore [on|off] - Toggle hardcore mode
       /<command> setspawn - Set spawn to your location
       /<command> version - Show plugin version
