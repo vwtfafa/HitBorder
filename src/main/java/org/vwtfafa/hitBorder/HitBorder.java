@@ -17,7 +17,6 @@ public final class HitBorder extends JavaPlugin {
     private PlayerDamageListener damageListener;
     private BlockBreakListener blockBreakListener;
     private static final String MODRINTH_PROJECT_ID = "hitborder";
-    private boolean isEnabled = false;
 
     @Override
     public void onEnable() {
@@ -46,14 +45,12 @@ public final class HitBorder extends JavaPlugin {
                 new UpdateChecker(this, MODRINTH_PROJECT_ID).checkForUpdates();
             }
             
-            isEnabled = true;
             getLogger().info("HitBorder v" + getDescription().getVersion() + " has been enabled!");
             
         } catch (Exception e) {
             getLogger().severe("Failed to enable HitBorder: " + e.getMessage());
             getLogger().log(Level.SEVERE, "Stacktrace:", e);
             Bukkit.getPluginManager().disablePlugin(this);
-            isEnabled = false;
         }
     }
 
@@ -91,9 +88,6 @@ public final class HitBorder extends JavaPlugin {
         getLogger().info("HitBorder configuration reloaded!");
     }
     
-    public boolean isPluginEnabled() {
-        return isEnabled;
-    }
     
     public BlockBreakListener getBlockBreakListener() {
         return blockBreakListener;
