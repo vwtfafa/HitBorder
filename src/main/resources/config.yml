@@ -30,7 +30,7 @@ border:
   grow-time: 3  # Faster growth for more dynamic gameplay
   
   # Minimum border size (radius)
-  min-size: 16.0  # Don't let it get smaller than 1 chunk
+  min-size: 1.0  # Don't let it get smaller than 1 block
   
   # Maximum border size (radius)
   max-size: 100.0  # Maximum size the border can grow to
@@ -76,24 +76,17 @@ game:
   
   # Whether OPs can trigger border growth (set to false to exclude OPs)
   affect-ops: true
-  
-  # Whether to show action bar messages when border grows
-  show-actionbar-messages: true
-  
-  # Whether to show title messages when border grows
-  show-title-messages: true
-  
-  # Whether to play sound effects when border grows
-  play-sounds: true
-  
-  # Sound to play when border grows
-  growth-sound: ENTITY_ENDER_DRAGON_GROWL
-  
-  # Sound volume (0.0 - 1.0)
-  sound-volume: 1.0
-  
-  # Sound pitch (0.5 - 2.0)
-  sound-pitch: 1.0
+
+  # Notification sound when the border grows (ping)
+  notification-sound:
+    enabled: true
+    name: BLOCK_NOTE_BLOCK_PLING
+    volume: 1.0
+    pitch: 1.2
+
+  # Optional join message showing current border size
+  join-message:
+    enabled: false
 
 # Messages
 messages:
@@ -103,9 +96,17 @@ messages:
   no-permission: "&cYou don't have permission to use this command!"
   invalid-number: "&cPlease enter a valid number!"
   usage-setborder: "&cUsage: /%s setborder <size>"
+  usage-set: "&cUsage: /%s set <size>"
+  usage-grow: "&cUsage: /%s grow <amount>"
+  usage-hardcore: "&cUsage: /%s hardcore [on|off]"
   reloaded: "&aConfiguration has been reloaded!"
   toggle-enabled: "&aHitBorder has been enabled!"
   toggle-disabled: "&cHitBorder has been disabled!"
+  hardcore-enabled: "&cHardcore mode is now enabled!"
+  hardcore-disabled: "&aHardcore mode is now disabled!"
+  spawn-set: "&aSpawn has been updated!"
+  player-only: "&cThis command can only be used by players!"
+  version: "&aHitBorder version: &e%s1"
   world-not-found: "&cThe specified world was not found!"
   
   # Border messages
@@ -113,13 +114,18 @@ messages:
   border-max: "&cThe border has reached its maximum size of %size% blocks!"
   border-set: "&aBorder size set to &e%size% blocks&a!"
   border-set-broadcast: "&aThe world border has been set to &e%size% blocks&a by %player%"
+  border-grew: "&aBorder changed by &e%s1 blocks&a (now %s2)."
+  join-border-size: "&7Current border size: &e%size% blocks"
   border-too-small: "&cThe border size cannot be smaller than %s blocks!"
   border-too-big: "&cThe border size cannot be larger than %s blocks!"
+  spawn-protection: "&cYou cannot build or break blocks in the protected spawn area!"
 
 # Update checker settings
 update-checker:
   enabled: true
   notify-ops: true
+  github-repo: "vwtfafa/HitBorder"
+  github-token: ""
   download-updates: false
   check-interval: 1440  # In minutes (24 hours)
 
