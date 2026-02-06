@@ -53,9 +53,20 @@ jobs:
       - name: Build
         run: ./gradlew clean shadowJar
 
+      - name: Rename artifact for beta
+        run: |
+          ORIGINAL="build/outlibs/HitBorder-${VERSION}.jar"
+          RENAMED="build/outlibs/HitBorder-${RELEASE_TAG}.jar"
+          if [ ! -f "$ORIGINAL" ]; then
+            echo "Artifact not found at $ORIGINAL" >&2
+            ls -la build/outlibs || true
+            exit 1
+          fi
+          mv "$ORIGINAL" "$RENAMED"
+
       - name: Resolve artifact
         run: |
-          ARTIFACT="build/outlibs/HitBorder-${VERSION}.jar"
+          ARTIFACT="build/outlibs/HitBorder-${RELEASE_TAG}.jar"
           if [ ! -f "$ARTIFACT" ]; then
             echo "Artifact not found at $ARTIFACT" >&2
             ls -la build/outlibs || true
