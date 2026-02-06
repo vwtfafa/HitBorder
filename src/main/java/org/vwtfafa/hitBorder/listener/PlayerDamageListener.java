@@ -15,12 +15,17 @@ import org.vwtfafa.hitBorder.config.ConfigManager;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import org.bukkit.Sound;
 import java.util.stream.Collectors;
 
 public class PlayerDamageListener implements Listener {
     private final HitBorder plugin;
     private final ConfigManager configManager;
     private Set<EntityDamageEvent.DamageCause> allowedDamageCauses;
+    private final ConcurrentMap<UUID, Long> lastGrowthByPlayer = new ConcurrentHashMap<>();
 
     public PlayerDamageListener(HitBorder plugin) {
         this.plugin = plugin;
@@ -110,11 +115,52 @@ public class PlayerDamageListener implements Listener {
             return;
         }
 
+        // Skip if ops should not affect the border
+        if (!configManager.isAffectOps() && player.isOp()) {
+            if (plugin.getConfig().getBoolean("debug.log-damage-events", false)) {
+                plugin.getLogger().info(String.format(
+                        "Damage event for %s ignored - ops do not affect border growth",
+                        player.getName()
+                ));
+            }
+            return;
+        }
+
+        int growthCooldownSeconds = configManager.getGrowthCooldown();
+        if (growthCooldownSeconds > 0) {
+            long now = System.currentTimeMillis();
+            long lastGrowth = lastGrowthByPlayer.getOrDefault(player.getUniqueId(), 0L);
+            long elapsedMillis = now - lastGrowth;
+            if (elapsedMillis < growthCooldownSeconds * 1000L) {
+                if (plugin.getConfig().getBoolean("debug.log-damage-events", false)) {
+                    plugin.getLogger().info(String.format(
+                            "Damage event for %s ignored - cooldown active (%.2fs remaining)",
+                            player.getName(),
+                            (growthCooldownSeconds * 1000L - elapsedMillis) / 1000.0
+                    ));
+                }
+                return;
+            }
+        }
+
         WorldBorder border = world.getWorldBorder();
         double currentSize = border.getSize();
-        double growAmount = configManager.getBorderGrowAmount() * 2; // Convert to diameter
-        double newSize = currentSize + growAmount;
         double maxSize = configManager.getMaxBorderSize() * 2; // Convert to diameter
+        boolean atMaxSize = currentSize >= maxSize - 0.1;
+        if (atMaxSize) {
+            if (configManager.isHardcoreMode()) {
+                killForHardcore(player, world, maxSize / 2);
+            }
+            return;
+        }
+
+        double finalDamage = event.getFinalDamage();
+        if (finalDamage <= 0) {
+            return;
+        }
+        int halfHearts = Math.max(1, (int) Math.ceil(finalDamage));
+        double growAmount = configManager.getBorderGrowAmount() * 2 * halfHearts; // Convert to diameter
+        double newSize = currentSize + growAmount;
 
         // Debug logging
         if (plugin.getConfig().getBoolean("debug.log-border-changes", false)) {
@@ -130,29 +176,10 @@ public class PlayerDamageListener implements Listener {
         }
 
         // Ensure border doesn't exceed maximum size
-        boolean atMaxSize = false;
+        atMaxSize = false;
         if (newSize >= maxSize) {
             newSize = maxSize;
             atMaxSize = true;
-
-            // Kill player in hardcore mode if border reaches maximum size
-            if (configManager.isHardcoreMode()) {
-                player.setHealth(0);
-
-                // Broadcast death message
-                String deathMessage = configManager.getMessage("hardcore-death");
-                if (deathMessage != null && !deathMessage.isEmpty()) {
-                    deathMessage = ChatColor.translateAlternateColorCodes('&',
-                                    configManager.getMessage("prefix") + deathMessage)
-                            .replace("%player%", player.getName())
-                            .replace("%size%", String.format("%.1f", newSize / 2));
-
-                    String finalDeathMessage = deathMessage;
-                    world.getPlayers().stream()
-                            .filter(p -> p.hasPermission("hitborder.notify"))
-                            .forEach(p -> p.sendMessage(finalDeathMessage));
-                }
-            }
 
             // Don't grow border if already at max size
             if (Math.abs(currentSize - maxSize) < 0.1) {
@@ -169,8 +196,9 @@ public class PlayerDamageListener implements Listener {
         // Apply new border size with smooth transition
         int growTime = configManager.getBorderGrowTime();
         border.setSize(finalNewSize, growTime);
+        lastGrowthByPlayer.put(player.getUniqueId(), System.currentTimeMillis());
 
-        // Notify players with permission
+        // Notify players with permission (chat + optional sound ping)
         String message = configManager.getMessage("border-grow");
         if (message != null && !message.isEmpty()) {
             final String finalMessage = ChatColor.translateAlternateColorCodes('&',
@@ -179,7 +207,29 @@ public class PlayerDamageListener implements Listener {
 
             world.getPlayers().stream()
                     .filter(p -> p.hasPermission("hitborder.notify"))
-                    .forEach(p -> p.sendMessage(finalMessage));
+                    .forEach(p -> {
+                        p.sendMessage(finalMessage);
+                        playNotificationSound(p);
+                    });
+        }
+
+        if (atMaxSize) {
+            String maxMessage = configManager.getMessage("border-max");
+            if (maxMessage != null && !maxMessage.isEmpty()) {
+                final String finalMaxMessage = ChatColor.translateAlternateColorCodes('&',
+                                configManager.getMessage("prefix") + maxMessage)
+                        .replace("%size%", String.format("%.1f", finalNewSize / 2));
+
+                world.getPlayers().stream()
+                        .filter(p -> p.hasPermission("hitborder.notify"))
+                        .forEach(p -> {
+                            p.sendMessage(finalMaxMessage);
+                            playNotificationSound(p);
+                        });
+            }
+            if (configManager.isHardcoreMode()) {
+                killForHardcore(player, world, finalNewSize / 2);
+            }
         }
 
         // Debug logging
@@ -195,5 +245,36 @@ public class PlayerDamageListener implements Listener {
 
     public void reload() {
         loadDamageCauses();
+    }
+
+    private void killForHardcore(Player player, World world, double size) {
+        player.setHealth(0);
+        String deathMessage = configManager.getMessage("hardcore-death");
+        if (deathMessage != null && !deathMessage.isEmpty()) {
+            deathMessage = ChatColor.translateAlternateColorCodes('&',
+                            configManager.getMessage("prefix") + deathMessage)
+                    .replace("%player%", player.getName())
+                    .replace("%size%", String.format("%.1f", size));
+
+            String finalDeathMessage = deathMessage;
+            world.getPlayers().stream()
+                    .filter(p -> p.hasPermission("hitborder.notify"))
+                    .forEach(p -> p.sendMessage(finalDeathMessage));
+        }
+    }
+
+    private void playNotificationSound(Player player) {
+        if (!plugin.getConfig().getBoolean("game.notification-sound.enabled", true)) {
+            return;
+        }
+        String soundName = plugin.getConfig().getString("game.notification-sound.name", "BLOCK_NOTE_BLOCK_PLING");
+        float volume = (float) plugin.getConfig().getDouble("game.notification-sound.volume", 1.0);
+        float pitch = (float) plugin.getConfig().getDouble("game.notification-sound.pitch", 1.2);
+        try {
+            Sound sound = Sound.valueOf(soundName.toUpperCase(java.util.Locale.ROOT));
+            player.playSound(player.getLocation(), sound, volume, pitch);
+        } catch (IllegalArgumentException e) {
+            plugin.getLogger().warning("Invalid notification sound configured: " + soundName);
+        }
     }
 }

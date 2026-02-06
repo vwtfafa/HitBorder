@@ -1,0 +1,85 @@
+name: Beta Release
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  beta-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Make Gradle wrapper executable
+        run: chmod +x ./gradlew
+
+      - name: Read version
+        run: |
+          if [ ! -f VERSION ]; then
+            echo "VERSION file missing" >&2
+            exit 1
+          fi
+          VERSION="$(cat VERSION | tr -d '\r\n')"
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+
+      - name: Determine release tag
+        run: |
+          echo "RELEASE_TAG=v${VERSION}-beta.${GITHUB_RUN_NUMBER}" >> "$GITHUB_ENV"
+
+      - name: Delete previous beta release for same version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG_PREFIX="v${VERSION}-beta."
+          EXISTING_TAG="$(gh api repos/${{ github.repository }}/releases --paginate --jq ".[] | select(.tag_name | startswith(\"${TAG_PREFIX}\")) | .tag_name" | head -n 1)"
+          if [ -n "$EXISTING_TAG" ]; then
+            echo "Deleting previous beta release: $EXISTING_TAG"
+            gh release delete "$EXISTING_TAG" --yes || true
+            git push --delete origin "$EXISTING_TAG" || true
+          fi
+
+      - name: Build
+        run: ./gradlew clean shadowJar
+
+      - name: Rename artifact for beta
+        run: |
+          ORIGINAL="build/outlibs/HitBorder-${VERSION}.jar"
+          RENAMED="build/outlibs/HitBorder-${RELEASE_TAG}.jar"
+          if [ ! -f "$ORIGINAL" ]; then
+            echo "Artifact not found at $ORIGINAL" >&2
+            ls -la build/outlibs || true
+            exit 1
+          fi
+          mv "$ORIGINAL" "$RENAMED"
+
+      - name: Resolve artifact
+        run: |
+          ARTIFACT="build/outlibs/HitBorder-${RELEASE_TAG}.jar"
+          if [ ! -f "$ARTIFACT" ]; then
+            echo "Artifact not found at $ARTIFACT" >&2
+            ls -la build/outlibs || true
+            exit 1
+          fi
+          echo "ARTIFACT=$ARTIFACT" >> "$GITHUB_ENV"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.RELEASE_TAG }}
+          name: HitBorder ${{ env.RELEASE_TAG }}
+          prerelease: true
+          generate_release_notes: true
+          target_commitish: ${{ github.sha }}
+          files: ${{ env.ARTIFACT }}
