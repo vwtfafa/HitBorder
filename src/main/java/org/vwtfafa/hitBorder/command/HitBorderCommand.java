@@ -30,20 +30,26 @@ public class HitBorderCommand implements CommandExecutor {
 
         String subCommand = args[0].toLowerCase();
         
-        // Check permission for all commands except help
-        if (!sender.hasPermission("hitborder.admin")) {
-            sendMessage(sender, "no-permission");
-            return true;
-        }
-
         switch (subCommand) {
             case "reload":
+                if (!sender.hasPermission("hitborder.admin")) {
+                    sendMessage(sender, "no-permission");
+                    return true;
+                }
                 return handleReload(sender);
                 
             case "toggle":
+                if (!sender.hasPermission("hitborder.admin")) {
+                    sendMessage(sender, "no-permission");
+                    return true;
+                }
                 return handleToggle(sender);
                 
             case "setborder":
+                if (!sender.hasPermission("hitborder.admin")) {
+                    sendMessage(sender, "no-permission");
+                    return true;
+                }
                 if (args.length < 2) {
                     sendMessage(sender, "usage-setborder", label);
                     return true;
@@ -57,6 +63,10 @@ public class HitBorderCommand implements CommandExecutor {
                 }
 
             case "set":
+                if (!sender.hasPermission("hitborder.admin")) {
+                    sendMessage(sender, "no-permission");
+                    return true;
+                }
                 if (args.length < 2) {
                     sendMessage(sender, "usage-set", label);
                     return true;
@@ -70,6 +80,10 @@ public class HitBorderCommand implements CommandExecutor {
                 }
 
             case "grow":
+                if (!sender.hasPermission("hitborder.admin")) {
+                    sendMessage(sender, "no-permission");
+                    return true;
+                }
                 if (args.length < 2) {
                     sendMessage(sender, "usage-grow", label);
                     return true;
@@ -86,9 +100,17 @@ public class HitBorderCommand implements CommandExecutor {
                 return handleStatus(sender);
 
             case "hardcore":
+                if (!sender.hasPermission("hitborder.admin")) {
+                    sendMessage(sender, "no-permission");
+                    return true;
+                }
                 return handleHardcore(sender, args);
 
             case "setspawn":
+                if (!sender.hasPermission("hitborder.admin")) {
+                    sendMessage(sender, "no-permission");
+                    return true;
+                }
                 return handleSetSpawn(sender);
 
             case "version":

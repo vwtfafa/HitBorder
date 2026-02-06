@@ -147,24 +147,18 @@ public class PlayerDamageListener implements Listener {
         double currentSize = border.getSize();
         double maxSize = configManager.getMaxBorderSize() * 2; // Convert to diameter
         boolean atMaxSize = currentSize >= maxSize - 0.1;
-        if (atMaxSize && configManager.isHardcoreMode()) {
-            player.setHealth(0);
-            String deathMessage = configManager.getMessage("hardcore-death");
-            if (deathMessage != null && !deathMessage.isEmpty()) {
-                deathMessage = ChatColor.translateAlternateColorCodes('&',
-                                configManager.getMessage("prefix") + deathMessage)
-                        .replace("%player%", player.getName())
-                        .replace("%size%", String.format("%.1f", maxSize / 2));
-
-                String finalDeathMessage = deathMessage;
-                world.getPlayers().stream()
-                        .filter(p -> p.hasPermission("hitborder.notify"))
-                        .forEach(p -> p.sendMessage(finalDeathMessage));
+        if (atMaxSize) {
+            if (configManager.isHardcoreMode()) {
+                killForHardcore(player, world, maxSize / 2);
             }
             return;
         }
 
-        int halfHearts = Math.max(1, (int) Math.floor(event.getFinalDamage()));
+        double finalDamage = event.getFinalDamage();
+        if (finalDamage <= 0) {
+            return;
+        }
+        int halfHearts = Math.max(1, (int) Math.ceil(finalDamage));
         double growAmount = configManager.getBorderGrowAmount() * 2 * halfHearts; // Convert to diameter
         double newSize = currentSize + growAmount;
 
@@ -186,25 +180,6 @@ public class PlayerDamageListener implements Listener {
         if (newSize >= maxSize) {
             newSize = maxSize;
             atMaxSize = true;
-
-            // Kill player in hardcore mode if border reaches maximum size
-            if (configManager.isHardcoreMode()) {
-                player.setHealth(0);
-
-                // Broadcast death message
-                String deathMessage = configManager.getMessage("hardcore-death");
-                if (deathMessage != null && !deathMessage.isEmpty()) {
-                    deathMessage = ChatColor.translateAlternateColorCodes('&',
-                                    configManager.getMessage("prefix") + deathMessage)
-                            .replace("%player%", player.getName())
-                            .replace("%size%", String.format("%.1f", newSize / 2));
-
-                    String finalDeathMessage = deathMessage;
-                    world.getPlayers().stream()
-                            .filter(p -> p.hasPermission("hitborder.notify"))
-                            .forEach(p -> p.sendMessage(finalDeathMessage));
-                }
-            }
 
             // Don't grow border if already at max size
             if (Math.abs(currentSize - maxSize) < 0.1) {
@@ -255,6 +230,9 @@ public class PlayerDamageListener implements Listener {
                             playNotificationSound(p);
                         });
             }
+            if (configManager.isHardcoreMode()) {
+                killForHardcore(player, world, finalNewSize / 2);
+            }
         }
 
         // Debug logging
@@ -270,6 +248,22 @@ public class PlayerDamageListener implements Listener {
 
     public void reload() {
         loadDamageCauses();
+    }
+
+    private void killForHardcore(Player player, World world, double size) {
+        player.setHealth(0);
+        String deathMessage = configManager.getMessage("hardcore-death");
+        if (deathMessage != null && !deathMessage.isEmpty()) {
+            deathMessage = ChatColor.translateAlternateColorCodes('&',
+                            configManager.getMessage("prefix") + deathMessage)
+                    .replace("%player%", player.getName())
+                    .replace("%size%", String.format("%.1f", size));
+
+            String finalDeathMessage = deathMessage;
+            world.getPlayers().stream()
+                    .filter(p -> p.hasPermission("hitborder.notify"))
+                    .forEach(p -> p.sendMessage(finalDeathMessage));
+        }
     }
 
     private void playNotificationSound(Player player) {
