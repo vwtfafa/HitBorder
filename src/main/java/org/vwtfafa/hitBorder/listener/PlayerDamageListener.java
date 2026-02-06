@@ -205,6 +205,9 @@ public class PlayerDamageListener implements Listener {
                             configManager.getMessage("prefix") + message)
                     .replace("%size%", String.format("%.1f", finalNewSize / 2));
 
+            String ping = configManager.getMessage("ping");
+            final String finalPing = (ping == null || ping.isEmpty()) ? "" : " " + ping;
+
             world.getPlayers().stream()
                     .filter(p -> p.hasPermission("hitborder.notify"))
                     .forEach(p -> {
