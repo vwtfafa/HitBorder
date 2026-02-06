@@ -1,0 +1,84 @@
+name: Release Build
+
+on:
+  push:
+    tags:
+      - beta
+      - release
+      - relse
+  workflow_dispatch:
+    inputs:
+      channel:
+        description: "Release channel (beta, release, relse)"
+        required: true
+        default: "beta"
+
+jobs:
+  build-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Make Gradle wrapper executable
+        run: chmod +x ./gradlew
+
+      - name: Read version
+        run: |
+          if [ ! -f VERSION ]; then
+            echo "VERSION file missing" >&2
+            exit 1
+          fi
+          VERSION="$(cat VERSION | tr -d '\r\n')"
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+
+      - name: Determine release tag
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            REF_NAME="${{ inputs.channel }}"
+          else
+            REF_NAME="${GITHUB_REF_NAME}"
+          fi
+          echo "REF_NAME=$REF_NAME" >> "$GITHUB_ENV"
+          if [ "$REF_NAME" = "beta" ]; then
+            echo "RELEASE_TAG=v${VERSION}-beta" >> "$GITHUB_ENV"
+            echo "PRERELEASE=true" >> "$GITHUB_ENV"
+          elif [ "$REF_NAME" = "release" ] || [ "$REF_NAME" = "relse" ]; then
+            echo "RELEASE_TAG=v${VERSION}" >> "$GITHUB_ENV"
+            echo "PRERELEASE=false" >> "$GITHUB_ENV"
+          else
+            echo "Unsupported tag: $REF_NAME" >&2
+            exit 1
+          fi
+
+      - name: Build
+        run: ./gradlew clean shadowJar
+
+      - name: Resolve artifact
+        run: |
+          ARTIFACT="build/outlibs/HitBorder-${VERSION}.jar"
+          if [ ! -f "$ARTIFACT" ]; then
+            echo "Artifact not found at $ARTIFACT" >&2
+            ls -la build/outlibs || true
+            exit 1
+          fi
+          echo "ARTIFACT=$ARTIFACT" >> "$GITHUB_ENV"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.RELEASE_TAG }}
+          name: HitBorder ${{ env.RELEASE_TAG }}
+          prerelease: ${{ env.PRERELEASE }}
+          target_commitish: ${{ github.sha }}
+          files: ${{ env.ARTIFACT }}
