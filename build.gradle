@@ -93,7 +93,8 @@ tasks.named('build') {
 apply plugin: 'java-library'
 
 group = 'org.vwtfafa'
-version = '1.0'
+def versionFile = file('VERSION')
+version = versionFile.exists() ? versionFile.text.trim() : '1.0'
 description = 'HitBorder Minecraft Plugin'
 java {
     toolchain {
@@ -133,11 +134,12 @@ repositories {
     mavenCentral()
     maven { url 'https://repo.papermc.io/repository/maven-public/' }
     maven { url 'https://plugins.gradle.org/m2/' }
+    maven { url 'https://repo.lucko.me/' }
 }
 
 dependencies {
-    // Paper API (using 1.21.10 as it's the latest stable)
-    compileOnly 'io.papermc.paper:paper-api:1.21.10-R0.1-SNAPSHOT'
+    // Paper API (using 1.21.11 as it's the latest stable)
+    compileOnly 'io.papermc.paper:paper-api:1.21.11-R0.1-SNAPSHOT'
     
     // Test dependencies
     testImplementation platform('org.junit:junit-bom:5.10.0')
@@ -152,6 +154,12 @@ dependencies {
     
     // Annotation processors
     compileOnly 'org.jetbrains:annotations:24.0.1'
+
+    // Metrics
+    implementation 'org.bstats:bstats-bukkit:3.1.0'
+
+    // Optional integrations
+    compileOnly 'net.luckperms:api:5.4'
 }
 
 // Configure Java compilation tasks
@@ -224,6 +232,7 @@ tasks.named('jar') {
 
 // Configure shadowJar task
 tasks.named('shadowJar', com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar) {
+    configurations = [project.configurations.runtimeClasspath]
     archiveBaseName.set('HitBorder')
     archiveClassifier.set('')
     archiveVersion.set(project.version.toString())
@@ -251,6 +260,7 @@ tasks.named('shadowJar', com.github.jengelman.gradle.plugins.shadow.tasks.Shadow
     
     // Configure shadowJar for Java 21
     mergeServiceFiles()
+    relocate('org.bstats', 'org.vwtfafa.hitBorder.libs.bstats')
     
     // Exclude signature files and other unnecessary files
     exclude 'META-INF/*.SF', 'META-INF/*.DSA', 'META-INF/*.RSA', 'META-INF/*.MF', 'META-INF/*.txt'
