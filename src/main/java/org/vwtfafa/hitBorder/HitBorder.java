@@ -2,12 +2,15 @@ package org.vwtfafa.hitBorder;
 
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bstats.bukkit.Metrics;
+import org.bstats.charts.SimplePie;
 import org.vwtfafa.hitBorder.command.HitBorderCommand;
 import org.vwtfafa.hitBorder.command.HitBorderTabCompleter;
 import org.vwtfafa.hitBorder.config.ConfigManager;
 import org.vwtfafa.hitBorder.listener.BlockBreakListener;
 import org.vwtfafa.hitBorder.listener.PlayerDamageListener;
 import org.vwtfafa.hitBorder.listener.PlayerSpawnListener;
+import org.vwtfafa.hitBorder.util.LuckPermsHook;
 import org.vwtfafa.hitBorder.util.UpdateChecker;
 
 import java.util.Objects;
@@ -19,6 +22,7 @@ public final class HitBorder extends JavaPlugin {
     private PlayerDamageListener damageListener;
     private BlockBreakListener blockBreakListener;
     private PlayerSpawnListener spawnListener;
+    private LuckPermsHook luckPermsHook;
     private static final String GITHUB_REPO = "vwtfafa/HitBorder";
     private boolean isEnabled = false;
 
@@ -33,6 +37,12 @@ public final class HitBorder extends JavaPlugin {
             // Initialize config manager
             this.configManager = new ConfigManager(this);
             
+            // Initialize integrations
+            this.luckPermsHook = new LuckPermsHook();
+            if (luckPermsHook.isAvailable()) {
+                getLogger().info("LuckPerms detected and linked.");
+            }
+
             // Register commands
             Objects.requireNonNull(getCommand("hitborder"), "Failed to register commands. Check plugin.yml")
                 .setExecutor(new HitBorderCommand(this));
@@ -48,6 +58,18 @@ public final class HitBorder extends JavaPlugin {
             getServer().getPluginManager().registerEvents(blockBreakListener, this);
             getServer().getPluginManager().registerEvents(spawnListener, this);
             
+            // Initialize bStats metrics
+            if (getConfig().getBoolean("metrics.enabled", true)) {
+                int bstatsId = getConfig().getInt("metrics.bstats-id", 29463);
+                if (bstatsId > 0) {
+                    Metrics metrics = new Metrics(this, bstatsId);
+                    metrics.addCustomChart(new SimplePie("hardcore_mode", () ->
+                            configManager.isHardcoreMode() ? "enabled" : "disabled"));
+                } else {
+                    getLogger().warning("metrics.bstats-id must be > 0 to enable bStats");
+                }
+            }
+
             // Set up update checker if enabled in config
             if (getConfig().getBoolean("update-checker.enabled", true)) {
                 String repo = getConfig().getString("update-checker.github-repo", GITHUB_REPO);
@@ -103,5 +125,9 @@ public final class HitBorder extends JavaPlugin {
     
     public BlockBreakListener getBlockBreakListener() {
         return blockBreakListener;
+    }
+
+    public LuckPermsHook getLuckPermsHook() {
+        return luckPermsHook;
     }
 }

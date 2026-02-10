@@ -134,6 +134,7 @@ repositories {
     mavenCentral()
     maven { url 'https://repo.papermc.io/repository/maven-public/' }
     maven { url 'https://plugins.gradle.org/m2/' }
+    maven { url 'https://repo.lucko.me/' }
 }
 
 dependencies {
@@ -153,6 +154,12 @@ dependencies {
     
     // Annotation processors
     compileOnly 'org.jetbrains:annotations:24.0.1'
+
+    // Metrics
+    implementation 'org.bstats:bstats-bukkit:3.1.0'
+
+    // Optional integrations
+    compileOnly 'net.luckperms:api:5.4'
 }
 
 // Configure Java compilation tasks
@@ -225,6 +232,7 @@ tasks.named('jar') {
 
 // Configure shadowJar task
 tasks.named('shadowJar', com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar) {
+    configurations = [project.configurations.runtimeClasspath]
     archiveBaseName.set('HitBorder')
     archiveClassifier.set('')
     archiveVersion.set(project.version.toString())
@@ -252,6 +260,7 @@ tasks.named('shadowJar', com.github.jengelman.gradle.plugins.shadow.tasks.Shadow
     
     // Configure shadowJar for Java 21
     mergeServiceFiles()
+    relocate('org.bstats', 'org.vwtfafa.hitBorder.libs.bstats')
     
     // Exclude signature files and other unnecessary files
     exclude 'META-INF/*.SF', 'META-INF/*.DSA', 'META-INF/*.RSA', 'META-INF/*.MF', 'META-INF/*.txt'

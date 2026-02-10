@@ -120,6 +120,17 @@ messages:
   border-too-big: "&cThe border size cannot be larger than %s blocks!"
   spawn-protection: "&cYou cannot build or break blocks in the protected spawn area!"
 
+# Metrics settings
+metrics:
+  enabled: true
+  bstats-id: 29463
+
+# Integrations
+integrations:
+  luckperms:
+    enabled: true
+    notify-groups: []
+
 # Update checker settings
 update-checker:
   enabled: true

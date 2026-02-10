@@ -11,6 +11,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.vwtfafa.hitBorder.HitBorder;
 import org.vwtfafa.hitBorder.config.ConfigManager;
+import org.vwtfafa.hitBorder.util.LuckPermsHook;
 
 import java.util.List;
 import java.util.Objects;
@@ -24,12 +25,14 @@ import java.util.stream.Collectors;
 public class PlayerDamageListener implements Listener {
     private final HitBorder plugin;
     private final ConfigManager configManager;
+    private final LuckPermsHook luckPermsHook;
     private Set<EntityDamageEvent.DamageCause> allowedDamageCauses;
     private final ConcurrentMap<UUID, Long> lastGrowthByPlayer = new ConcurrentHashMap<>();
 
     public PlayerDamageListener(HitBorder plugin) {
         this.plugin = plugin;
         this.configManager = plugin.getConfigManager();
+        this.luckPermsHook = plugin.getLuckPermsHook();
         loadDamageCauses();
     }
 
@@ -209,7 +212,7 @@ public class PlayerDamageListener implements Listener {
             final String finalPing = (ping == null || ping.isEmpty()) ? "" : " " + ping;
 
             world.getPlayers().stream()
-                    .filter(p -> p.hasPermission("hitborder.notify"))
+                    .filter(this::canReceiveNotification)
                     .forEach(p -> {
                         p.sendMessage(finalMessage);
                         playNotificationSound(p);
@@ -224,7 +227,7 @@ public class PlayerDamageListener implements Listener {
                         .replace("%size%", String.format("%.1f", finalNewSize / 2));
 
                 world.getPlayers().stream()
-                        .filter(p -> p.hasPermission("hitborder.notify"))
+                        .filter(this::canReceiveNotification)
                         .forEach(p -> {
                             p.sendMessage(finalMaxMessage);
                             playNotificationSound(p);
@@ -261,9 +264,24 @@ public class PlayerDamageListener implements Listener {
 
             String finalDeathMessage = deathMessage;
             world.getPlayers().stream()
-                    .filter(p -> p.hasPermission("hitborder.notify"))
+                    .filter(this::canReceiveNotification)
                     .forEach(p -> p.sendMessage(finalDeathMessage));
         }
+    }
+
+
+    private boolean canReceiveNotification(Player player) {
+        if (player.hasPermission("hitborder.notify")) {
+            return true;
+        }
+        if (!plugin.getConfig().getBoolean("integrations.luckperms.enabled", true)) {
+            return false;
+        }
+        if (luckPermsHook == null || !luckPermsHook.isAvailable()) {
+            return false;
+        }
+        java.util.List<String> groups = plugin.getConfig().getStringList("integrations.luckperms.notify-groups");
+        return luckPermsHook.isInAnyGroup(player, groups);
     }
 
     private void playNotificationSound(Player player) {

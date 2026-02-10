@@ -51,7 +51,7 @@ update-checker: true
 
 # Dependencies (if any)
 depend: []
-softdepend: []  # Keine Soft-Dependencies erforderlich
+softdepend: [LuckPerms]  # Optional integration
 
 # Plugin load order (NORMAL, STARTUP, POSTWORLD)
 load: POSTWORLD
