@@ -17,6 +17,11 @@ commands:
       /<command> toggle - Toggle border growth
       /<command> reload - Reload configuration
       /<command> setborder <size> - Set border size
+      /<command> set <size> - Set border size
+      /<command> grow <amount> - Grow or shrink border
+      /<command> hardcore [on|off] - Toggle hardcore mode
+      /<command> setspawn - Set spawn to your location
+      /<command> version - Show plugin version
 
 # Permission nodes
 permissions:
@@ -26,6 +31,7 @@ permissions:
     children:
       hitborder.bypass: true
       hitborder.notify: true
+      hitborder.spawn.bypass: true
   
   hitborder.bypass:
     description: Allows bypassing the border restrictions
@@ -35,13 +41,14 @@ permissions:
     description: Receive notifications about border changes
     default: true
 
-# Plugin metrics and update checker
-metrics: 12345  # Replace with your bStats ID if you have one
-update-checker: true
+  hitborder.spawn.bypass:
+    description: Allows bypassing spawn protection
+    default: op
+
 
 # Dependencies (if any)
 depend: []
-softdepend: []  # Keine Soft-Dependencies erforderlich
+softdepend: [LuckPerms]  # Optional integration
 
 # Plugin load order (NORMAL, STARTUP, POSTWORLD)
 load: POSTWORLD
