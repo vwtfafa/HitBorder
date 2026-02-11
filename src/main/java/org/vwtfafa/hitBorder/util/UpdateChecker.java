@@ -50,6 +50,12 @@ public class UpdateChecker {
                 connection.setUseCaches(false);
 
                 int responseCode = connection.getResponseCode();
+                if (responseCode == HttpURLConnection.HTTP_NOT_FOUND) {
+                    if (plugin.getConfig().getBoolean("update-checker.verbose", false)) {
+                        plugin.getLogger().info("Update check: no GitHub release found yet for " + githubRepo + ".");
+                    }
+                    return;
+                }
                 if (responseCode == HttpURLConnection.HTTP_FORBIDDEN) {
                     String remaining = connection.getHeaderField("X-RateLimit-Remaining");
                     String hint = remaining != null && "0".equals(remaining)
@@ -60,7 +66,9 @@ public class UpdateChecker {
                     return;
                 }
                 if (responseCode != HttpURLConnection.HTTP_OK) {
-                    plugin.getLogger().warning("Update check failed: HTTP " + responseCode);
+                    if (plugin.getConfig().getBoolean("update-checker.verbose", false)) {
+                        plugin.getLogger().warning("Update check failed: HTTP " + responseCode);
+                    }
                     return;
                 }
 

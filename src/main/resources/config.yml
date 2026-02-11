@@ -136,9 +136,10 @@ update-checker:
   enabled: true
   notify-ops: true
   github-repo: "vwtfafa/HitBorder"
-  github-token: ""
+  github-token: ""  # Optional: set only if you need higher GitHub API limits
   download-updates: false
   check-interval: 1440  # In minutes (24 hours)
+  verbose: false
 
 # Debug settings (for development)
 debug:

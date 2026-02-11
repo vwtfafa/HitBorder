@@ -45,9 +45,6 @@ permissions:
     description: Allows bypassing spawn protection
     default: op
 
-# Plugin metrics and update checker
-metrics: 12345  # Replace with your bStats ID if you have one
-update-checker: true
 
 # Dependencies (if any)
 depend: []
