@@ -144,8 +144,8 @@ dependencies {
     // Test dependencies
     testImplementation platform('org.junit:junit-bom:5.10.0')
     testImplementation 'org.junit.jupiter:junit-jupiter'
-    testImplementation 'org.mockito:mockito-core:5.5.0'
-    testImplementation 'org.mockito:mockito-junit-jupiter:5.5.0'
+    testImplementation 'org.mockito:mockito-core:5.24.0'
+    testImplementation 'org.mockito:mockito-junit-jupiter:5.24.0'
     
     // ASM for Java 21 support (explicitly including these for Shadow plugin)
     implementation 'org.ow2.asm:asm:9.5'
