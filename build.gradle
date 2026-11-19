@@ -12,7 +12,7 @@ buildscript {
     configurations.classpath {
         resolutionStrategy {
             force 'org.ow2.asm:asm:9.5'
-            force 'org.ow2.asm:asm-commons:9.5'
+            force 'org.ow2.asm:asm-commons:9.11.1'
             force 'org.ow2.asm:asm-tree:9.11.1'
             force 'org.ow2.asm:asm-util:9.5'
             force 'org.ow2.asm:asm-analysis:9.5'
@@ -31,7 +31,7 @@ configurations.all {
     resolutionStrategy {
         // Force ASM version that supports Java 21
         force 'org.ow2.asm:asm:9.5'
-        force 'org.ow2.asm:asm-commons:9.5'
+        force 'org.ow2.asm:asm-commons:9.11.1'
         force 'org.ow2.asm:asm-tree:9.11.1'
         force 'org.ow2.asm:asm-util:9.5'
         force 'org.ow2.asm:asm-analysis:9.5'
@@ -149,7 +149,7 @@ dependencies {
     
     // ASM for Java 21 support (explicitly including these for Shadow plugin)
     implementation 'org.ow2.asm:asm:9.5'
-    implementation 'org.ow2.asm:asm-commons:9.5'
+    implementation 'org.ow2.asm:asm-commons:9.11.1'
     implementation 'org.ow2.asm:asm-tree:9.11.1'
     
     // Annotation processors
