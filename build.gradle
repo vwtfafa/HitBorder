@@ -153,7 +153,7 @@ dependencies {
     implementation 'org.ow2.asm:asm-tree:9.5'
     
     // Annotation processors
-    compileOnly 'org.jetbrains:annotations:24.0.1'
+    compileOnly 'org.jetbrains:annotations:24.1.0'
 
     // Metrics
     implementation 'org.bstats:bstats-bukkit:3.2.1'
