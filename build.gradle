@@ -15,7 +15,7 @@ buildscript {
             force 'org.ow2.asm:asm-commons:9.5'
             force 'org.ow2.asm:asm-tree:9.5'
             force 'org.ow2.asm:asm-util:9.5'
-            force 'org.ow2.asm:asm-analysis:9.5'
+            force 'org.ow2.asm:asm-analysis:9.11.1'
         }
     }
 }
@@ -34,7 +34,7 @@ configurations.all {
         force 'org.ow2.asm:asm-commons:9.5'
         force 'org.ow2.asm:asm-tree:9.5'
         force 'org.ow2.asm:asm-util:9.5'
-        force 'org.ow2.asm:asm-analysis:9.5'
+        force 'org.ow2.asm:asm-analysis:9.11.1'
         
         // Force Shadow plugin to use the correct ASM version
         eachDependency { details ->
